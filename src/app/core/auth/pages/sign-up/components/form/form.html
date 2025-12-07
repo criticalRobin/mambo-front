@@ -1,0 +1,83 @@
+<div>
+  <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2"
+    >Correo electrónico</label
+  >
+  <input
+    pInputText
+    id="email1"
+    type="text"
+    placeholder="Correo electrónico"
+    class="w-full md:w-120 mb-8"
+    [(ngModel)]="email"
+  />
+
+  <div class="flex flex-col md:flex-row gap-4 mb-8">
+    <div class="flex-1">
+      <label for="name" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2"
+        >Nombre</label
+      >
+      <input
+        pInputText
+        id="name"
+        type="text"
+        placeholder="Nombre"
+        class="w-full"
+        [(ngModel)]="name"
+      />
+    </div>
+    <div class="flex-1">
+      <label
+        for="lastName"
+        class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2"
+        >Apellido</label
+      >
+      <input
+        pInputText
+        id="lastName"
+        type="text"
+        placeholder="Apellido"
+        class="w-full"
+        [(ngModel)]="lastName"
+      />
+    </div>
+  </div>
+  <label for="password" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2"
+    >Contraseña</label
+  >
+  <p-password
+    id="password"
+    [(ngModel)]="password1"
+    placeholder="Contraseña"
+    [toggleMask]="true"
+    styleClass="mb-4"
+    [fluid]="true"
+    [feedback]="false"
+  ></p-password>
+  <label for="password2" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2"
+    >Repetir contraseña</label
+  >
+  <p-password
+    id="password2"
+    [(ngModel)]="password2"
+    placeholder="Confirmar contraseña"
+    [toggleMask]="true"
+    styleClass="mb-4"
+    [fluid]="true"
+    [feedback]="false"
+  ></p-password>
+
+  <div class="flex items-center justify-between mt-2 mb-8 gap-8">
+    <a
+      routerLink="/auth/login"
+      class="font-medium no-underline ml-2 text-right cursor-pointer text-primary"
+      >Ya tienes una cuenta? Inicia sesión</a
+    >
+  </div>
+  <p-button
+    label="Registrarse"
+    styleClass="w-full"
+    [loading]="loading"
+    [disabled]="loading"
+    (onClick)="onSubmit()"
+  ></p-button>
+</div>
