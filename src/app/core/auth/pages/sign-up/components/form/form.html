@@ -1,17 +1,25 @@
 <div>
-  <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2"
-    >Correo electrónico</label
-  >
-  <input
-    pInputText
-    id="email1"
-    type="text"
-    placeholder="Correo electrónico"
-    class="w-full md:w-120 mb-8"
-    [(ngModel)]="email"
-  />
+  <div class="mb-6">
+    <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2"
+      >Correo electrónico</label
+    >
+    <input
+      pInputText
+      id="email1"
+      type="email"
+      placeholder="Correo electrónico"
+      class="w-full md:w-120"
+      [ngClass]="{ 'ng-invalid ng-dirty': errors.email }"
+      [(ngModel)]="email"
+      (input)="onFieldChange('email')"
+      required
+    />
+    @if (errors.email) {
+      <small class="text-red-500 block mt-1">{{ errors.email }}</small>
+    }
+  </div>
 
-  <div class="flex flex-col md:flex-row gap-4 mb-8">
+  <div class="flex flex-col md:flex-row gap-4 mb-6">
     <div class="flex-1">
       <label for="name" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2"
         >Nombre</label
@@ -22,8 +30,14 @@
         type="text"
         placeholder="Nombre"
         class="w-full"
+        [ngClass]="{ 'ng-invalid ng-dirty': errors.name }"
         [(ngModel)]="name"
+        (input)="onFieldChange('name')"
+        required
       />
+      @if (errors.name) {
+        <small class="text-red-500 block mt-1">{{ errors.name }}</small>
+      }
     </div>
     <div class="flex-1">
       <label
@@ -37,34 +51,56 @@
         type="text"
         placeholder="Apellido"
         class="w-full"
+        [ngClass]="{ 'ng-invalid ng-dirty': errors.lastName }"
         [(ngModel)]="lastName"
+        (input)="onFieldChange('lastName')"
+        required
       />
+      @if (errors.lastName) {
+        <small class="text-red-500 block mt-1">{{ errors.lastName }}</small>
+      }
     </div>
   </div>
-  <label for="password" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2"
-    >Contraseña</label
-  >
-  <p-password
-    id="password"
-    [(ngModel)]="password1"
-    placeholder="Contraseña"
-    [toggleMask]="true"
-    styleClass="mb-4"
-    [fluid]="true"
-    [feedback]="false"
-  ></p-password>
-  <label for="password2" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2"
-    >Repetir contraseña</label
-  >
-  <p-password
-    id="password2"
-    [(ngModel)]="password2"
-    placeholder="Confirmar contraseña"
-    [toggleMask]="true"
-    styleClass="mb-4"
-    [fluid]="true"
-    [feedback]="false"
-  ></p-password>
+  <div class="mb-6">
+    <label for="password" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2"
+      >Contraseña</label
+    >
+    <p-password
+      id="password"
+      [(ngModel)]="password1"
+      placeholder="Contraseña"
+      [toggleMask]="true"
+      styleClass="w-full"
+      [ngClass]="{ 'ng-invalid ng-dirty': errors.password1 }"
+      [fluid]="true"
+      [feedback]="false"
+      (ngModelChange)="onFieldChange('password1')"
+      required
+    ></p-password>
+    @if (errors.password1) {
+      <small class="text-red-500 block mt-1">{{ errors.password1 }}</small>
+    }
+  </div>
+  <div class="mb-6">
+    <label for="password2" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2"
+      >Repetir contraseña</label
+    >
+    <p-password
+      id="password2"
+      [(ngModel)]="password2"
+      placeholder="Confirmar contraseña"
+      [toggleMask]="true"
+      styleClass="w-full"
+      [ngClass]="{ 'ng-invalid ng-dirty': errors.password2 }"
+      [fluid]="true"
+      [feedback]="false"
+      (ngModelChange)="onFieldChange('password2')"
+      required
+    ></p-password>
+    @if (errors.password2) {
+      <small class="text-red-500 block mt-1">{{ errors.password2 }}</small>
+    }
+  </div>
 
   <div class="flex items-center justify-between mt-2 mb-8 gap-8">
     <a
