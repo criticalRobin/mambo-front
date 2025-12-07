@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { TwoFactorAuthService } from '../../services/two-factor-auth.service';
 import { AuthStorageService } from '../../../../services/auth-storage.service';
+import { ToastService } from '../../../../../../shared/services/toast.service';
 
 @Component({
   selector: 'app-two-factor-auth-form',
@@ -16,16 +17,35 @@ import { AuthStorageService } from '../../../../services/auth-storage.service';
 export class TwoFactorAuthForm {
   code: string = '';
   loading: boolean = false;
+  error: string = '';
 
   constructor(
     private twoFactorAuthService: TwoFactorAuthService,
     private authStorageService: AuthStorageService,
-    private router: Router
+    private router: Router,
+    private toastService: ToastService
   ) {}
 
   onSubmit(): void {
+    // Limpiar error previo
+    this.error = '';
+
     // Validaciones
-    if (!this.code || this.code.length !== 6 || !/^\d+$/.test(this.code)) {
+    if (!this.code || this.code.trim() === '') {
+      this.error = 'El código de verificación es requerido';
+      this.toastService.showWarn('Código requerido', 'Por favor ingrese el código de verificación');
+      return;
+    }
+
+    if (this.code.length !== 6) {
+      this.error = 'El código debe tener 6 dígitos';
+      this.toastService.showWarn('Código inválido', 'El código debe tener exactamente 6 dígitos');
+      return;
+    }
+
+    if (!/^\d+$/.test(this.code)) {
+      this.error = 'El código solo debe contener números';
+      this.toastService.showWarn('Código inválido', 'El código solo debe contener números');
       return;
     }
 
@@ -59,5 +79,12 @@ export class TwoFactorAuthForm {
           this.router.navigate(['/auth/auth-error']);
         },
       });
+  }
+
+  // Limpiar error cuando el usuario empieza a escribir
+  onCodeChange(): void {
+    if (this.error) {
+      this.error = '';
+    }
   }
 }
