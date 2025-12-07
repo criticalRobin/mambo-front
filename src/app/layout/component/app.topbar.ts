@@ -1,15 +1,28 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { MenuItem } from 'primeng/api';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { StyleClassModule } from 'primeng/styleclass';
+import { MenuModule, Menu } from 'primeng/menu';
+import { DialogModule } from 'primeng/dialog';
+import { ButtonModule } from 'primeng/button';
 import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '../service/layout.service';
+import { AuthService } from '../../core/auth/services/auth.service';
+import { ToastService } from '../../shared/services/toast.service';
 
 @Component({
   selector: 'app-topbar',
   standalone: true,
-  imports: [RouterModule, CommonModule, StyleClassModule, AppConfigurator],
+  imports: [
+    RouterModule,
+    CommonModule,
+    StyleClassModule,
+    MenuModule,
+    DialogModule,
+    ButtonModule,
+    AppConfigurator,
+  ],
   template: ` <div class="layout-topbar">
     <div class="layout-topbar-logo-container">
       <button
@@ -90,23 +103,99 @@ import { LayoutService } from '../service/layout.service';
         <i class="pi pi-ellipsis-v"></i>
       </button>
 
-      <div class="layout-topbar-menu hidden lg:block">
-        <div class="layout-topbar-menu-content">
-          <button type="button" class="layout-topbar-action">
-            <i class="pi pi-user"></i>
-            <span>Profile</span>
-          </button>
-        </div>
+      <div class="relative">
+        <button
+          type="button"
+          class="layout-topbar-action"
+          #profileMenuButton
+          (click)="profileMenu.toggle($event)"
+        >
+          <i class="pi pi-user"></i>
+          <span class="hidden lg:inline">Profile</span>
+        </button>
+        <p-menu #profileMenu [model]="profileMenuItems" [popup]="true" [appendTo]="'body'" />
       </div>
+
+      <p-dialog
+        [(visible)]="showLogoutDialog"
+        [modal]="true"
+        [style]="{ width: '25rem' }"
+        [draggable]="false"
+        [resizable]="false"
+        [blockScroll]="false"
+        [dismissableMask]="true"
+        [appendTo]="'body'"
+        [baseZIndex]="10000"
+        header="Confirmar cierre de sesión"
+      >
+        <p class="m-0">¿Estás seguro de que deseas cerrar sesión?</p>
+        <ng-template pTemplate="footer">
+          <p-button
+            label="Cancelar"
+            severity="secondary"
+            [text]="true"
+            (onClick)="showLogoutDialog = false"
+          />
+          <p-button label="Cerrar sesión" severity="danger" (onClick)="confirmLogout()" />
+        </ng-template>
+      </p-dialog>
     </div>
   </div>`,
 })
 export class AppTopbar {
+  @ViewChild('profileMenu') profileMenu!: Menu;
   items!: MenuItem[];
+  showLogoutDialog: boolean = false;
+  profileMenuItems: MenuItem[] = [];
 
-  constructor(public layoutService: LayoutService) {}
+  constructor(
+    public layoutService: LayoutService,
+    private authService: AuthService,
+    private router: Router,
+    private toastService: ToastService
+  ) {
+    this.initProfileMenu();
+  }
+
+  ngOnInit() {
+    this.initProfileMenu();
+  }
+
+  private initProfileMenu() {
+    this.profileMenuItems = [
+      {
+        label: 'Perfil',
+        icon: 'pi pi-user',
+        command: () => {
+          // Aquí puedes agregar la navegación al perfil cuando lo implementes
+        },
+      },
+      {
+        separator: true,
+      },
+      {
+        label: 'Cerrar sesión',
+        icon: 'pi pi-sign-out',
+        command: () => {
+          if (this.profileMenu) {
+            this.profileMenu.hide();
+          }
+          this.showLogoutDialog = true;
+        },
+      },
+    ];
+  }
 
   toggleDarkMode() {
     this.layoutService.layoutConfig.update((state) => ({ ...state, darkTheme: !state.darkTheme }));
+  }
+
+  confirmLogout() {
+    this.authService.logout();
+    this.showLogoutDialog = false;
+    this.toastService.showInfo('Sesión cerrada', 'Has cerrado sesión correctamente');
+    setTimeout(() => {
+      this.router.navigate(['/auth/login']);
+    }, 500);
   }
 }
