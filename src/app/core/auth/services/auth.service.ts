@@ -1,5 +1,8 @@
 import { Injectable, signal } from '@angular/core';
-
+import { Observable, tap } from 'rxjs';
+import { environment } from '../../../../environments/environment';
+import { HttpClient } from '@angular/common/http';
+import { ToastService } from '../../../shared/services/toast.service';
 /**
  * Servicio para gestionar el estado de autenticación de la aplicación
  */
@@ -13,7 +16,7 @@ export class AuthService {
   // Signal que indica si el usuario está autenticado
   isAuthenticated = signal<boolean>(false);
 
-  constructor() {
+  constructor(private http: HttpClient, private toastService: ToastService) {
     // Verificar si hay token al inicializar
     this.checkAuthStatus();
   }
@@ -74,5 +77,26 @@ export class AuthService {
   isLoggedIn(): boolean {
     return this.isAuthenticated();
   }
-}
 
+  /**
+   * Envia solicitud de recuperación de contraseña
+   */
+  sendPasswordRecovery(email: string): Observable<void> {
+    return this.http.post<void>(`${environment.BASE_URL}/auth/request-reset`, { email }).pipe(
+      tap({
+        next: () => {
+          this.toastService.showSuccess(
+            'Solicitud de recuperación de contraseña enviada',
+            'Se ha enviado un correo para recuperar tu contraseña'
+          );
+        },
+        error: () => {
+          this.toastService.showError(
+            'Error al enviar la solicitud de recuperación de contraseña',
+            'No se pudo enviar el correo'
+          );
+        },
+      })
+    );
+  }
+}

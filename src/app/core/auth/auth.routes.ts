@@ -7,6 +7,7 @@ import { publicGuard } from '../guards/public.guard';
 import { twoFactorGuard } from '../guards/two-factor.guard';
 import { AuthUnauthorized } from './pages/auth-unauthorized/auth-unauthorized';
 import { AuthError } from './pages/auth-error/auth-error';
+import { PasswordRecovery } from './pages/password-recovery/password-recovery';
 
 export const authRoutes: Routes = [
   {
@@ -38,6 +39,11 @@ export const authRoutes: Routes = [
   {
     path: 'auth/auth-error',
     component: AuthError,
+    canActivate: [publicGuard],
+  },
+  {
+    path: 'auth/password-recovery',
+    component: PasswordRecovery,
     canActivate: [publicGuard],
   },
 ];
