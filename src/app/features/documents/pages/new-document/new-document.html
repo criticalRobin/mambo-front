@@ -168,34 +168,95 @@
         </div>
       </div>
 
-      <!-- Step 2: Editor -->
+      <!-- Step 1: Editor -->
       <div *ngIf="activeIndex === 1" class="fade-in">
-        <h3 class="text-xl font-semibold mb-3">Redacción</h3>
+        <h3 class="text-xl font-semibold mb-3">Redacción del Contenido</h3>
         <p-editor formControlName="content" [style]="{ height: '320px' }"></p-editor>
       </div>
 
-      <!-- Step 3: Preview -->
+      <!-- Step 2: Firma Electrónica -->
       <div *ngIf="activeIndex === 2" class="fade-in">
-        <h3 class="text-xl font-semibold mb-3">Revisión del Documento</h3>
-        <div
-          class="bg-gray-50 dark:bg-gray-900 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
-        >
-          <div class="text-3xl font-medium text-gray-900 dark:text-gray-100 mb-3">
-            {{ docForm.get('title')?.value }}
+        <app-signature-canvas
+          *ngIf="signatureConfig && pdfPreviewUrlForSignature"
+          [pdfPreviewUrl]="pdfPreviewUrlForSignature"
+          [signatureConfig]="signatureConfig"
+          (signatureApplied)="onSignatureApplied($event)"
+          (signaturePlaced)="onSignaturePositioned()"
+        ></app-signature-canvas>
+
+        <!-- Loading state mientras se prepara la firma -->
+        <div *ngIf="generatingPDF" class="flex justify-center items-center py-16">
+          <div class="text-center">
+            <i class="pi pi-spin pi-spinner text-4xl text-primary mb-3"></i>
+            <p class="text-gray-600 dark:text-gray-400">Preparando documento para firma...</p>
           </div>
-          <div class="font-medium text-gray-500 dark:text-gray-400 mb-2">
-            <span class="text-gray-900 dark:text-gray-100 font-semibold">Para:</span>
-            {{ docForm.get('recipient')?.value }}
+        </div>
+      </div>
+
+      <!-- Step 3: Revisión y Envío -->
+      <div *ngIf="activeIndex === 3" class="fade-in">
+        <h3 class="text-xl font-semibold mb-4">Revisión Final y Envío</h3>
+        
+        <!-- Estado de Firma -->
+        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+          <div class="flex items-center gap-3">
+            <i class="pi pi-check-circle text-green-600 dark:text-green-400 text-2xl"></i>
+            <div>
+              <h4 class="font-semibold text-green-900 dark:text-green-100 mb-1">Documento Firmado Electrónicamente</h4>
+              <p class="text-sm text-green-700 dark:text-green-300">El documento ha sido firmado y está listo para ser enviado.</p>
+            </div>
           </div>
-          <div class="font-medium text-gray-500 dark:text-gray-400 mb-3">
-            <span class="text-gray-900 dark:text-gray-100 font-semibold">Asunto:</span>
-            {{ docForm.get('subject')?.value }}
+        </div>
+
+        <!-- Resumen del Documento -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+          <h4 class="font-semibold text-lg mb-4 text-gray-900 dark:text-gray-100">Resumen del Documento</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Tipo de Documento</p>
+              <p class="font-medium text-gray-900 dark:text-gray-100">{{ docForm.get('type')?.value }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Destinatario</p>
+              <p class="font-medium text-gray-900 dark:text-gray-100">{{ docForm.get('recipient')?.value }}</p>
+            </div>
+            <div class="md:col-span-2">
+              <p class="text-sm text-gray-500 dark:text-gray-400">Título</p>
+              <p class="font-medium text-gray-900 dark:text-gray-100">{{ docForm.get('title')?.value }}</p>
+            </div>
+            <div class="md:col-span-2">
+              <p class="text-sm text-gray-500 dark:text-gray-400">Asunto</p>
+              <p class="font-medium text-gray-900 dark:text-gray-100">{{ docForm.get('subject')?.value }}</p>
+            </div>
           </div>
-          <hr class="my-4 border-t border-gray-300 dark:border-gray-700" />
-          <div
-            class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
-            [innerHTML]="docForm.get('content')?.value"
-          ></div>
+        </div>
+
+        <!-- Acciones con PDF -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+          <h4 class="font-semibold text-lg mb-4 text-blue-900 dark:text-blue-100">
+            <i class="pi pi-file-pdf mr-2"></i>Documento PDF Firmado
+          </h4>
+          <p class="text-sm text-blue-700 dark:text-blue-300 mb-4">
+            Puedes previsualizar o descargar el documento firmado antes de enviarlo.
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <button
+              pButton
+              label="Previsualizar PDF Firmado"
+              icon="pi pi-eye"
+              (click)="previewPDF()"
+              [loading]="generatingPDF"
+              class="p-button-outlined p-button-info"
+            ></button>
+            <button
+              pButton
+              label="Descargar PDF"
+              icon="pi pi-download"
+              (click)="downloadPDF()"
+              [loading]="generatingPDF"
+              class="p-button-outlined p-button-secondary"
+            ></button>
+          </div>
         </div>
       </div>
 
@@ -206,11 +267,12 @@
           label="Atrás"
           (click)="prev()"
           icon="pi pi-angle-left"
-          [disabled]="activeIndex === 0"
+          [disabled]="activeIndex === 0 || loading"
           class="p-button-secondary"
         ></button>
 
         <div class="flex gap-2">
+          <!-- Guardar Borrador en Step 1 -->
           <button
             *ngIf="activeIndex === 1"
             pButton
@@ -221,6 +283,8 @@
             class="p-button-outlined p-button-secondary"
             pTooltip="Guarda tu progreso para continuar después"
           ></button>
+
+          <!-- Botón Siguiente para Steps 0 y 1 -->
           <button
             *ngIf="activeIndex < 2"
             pButton
@@ -228,20 +292,59 @@
             (click)="next()"
             icon="pi pi-angle-right"
             iconPos="right"
-            [disabled]="!isStepValid(activeIndex)"
+            [disabled]="!isStepValid(activeIndex) || generatingPDF"
+            [loading]="generatingPDF"
           ></button>
+
+          <!-- Botón Continuar a Revisión en Step 2 (Firma) -->
           <button
             *ngIf="activeIndex === 2"
             pButton
+            label="Continuar a Revisión"
+            (click)="next()"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            class="p-button-primary"
+            [disabled]="!isStepValid(activeIndex) || generatingSignedPDF"
+            [loading]="generatingSignedPDF"
+          ></button>
+
+          <!-- Botón Enviar Documento en Step 3 (Revisión Final) -->
+          <button
+            *ngIf="activeIndex === 3"
+            pButton
             label="Enviar Documento"
-            (click)="save()"
-            icon="pi pi-check"
+            (click)="finalizeDocument()"
+            icon="pi pi-send"
             iconPos="right"
             [loading]="loading"
-            class="p-button-success"
+            class="p-button-primary"
+            pTooltip="Envía el documento firmado"
           ></button>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Modal de Previsualización PDF -->
+<p-dialog
+  header="Vista Previa del Documento"
+  [(visible)]="showPreview"
+  [modal]="true"
+  [style]="{ width: '90vw', height: '90vh' }"
+  [draggable]="false"
+  [resizable]="false"
+  (onHide)="closePreview()"
+>
+  <div class="flex justify-center items-center" style="height: 80vh">
+    <iframe
+      *ngIf="pdfPreviewUrl"
+      [src]="pdfPreviewUrl"
+      width="100%"
+      height="100%"
+      frameborder="0"
+      style="border: 1px solid #ddd"
+    ></iframe>
+  </div>
+</p-dialog>

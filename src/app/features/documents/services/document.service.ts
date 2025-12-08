@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Observable, of, delay } from 'rxjs';
-import type { Document as DocumentModel, CreateDocumentRequest } from '../models/document.model';
+import { environment } from '@env/environment';
+import type { Document as DocumentModel, CreateDocumentRequest, CreateDocumentWithPdfRequest } from '../models/document.model';
 
 @Injectable({
     providedIn: 'root'
@@ -91,7 +93,7 @@ export class DocumentService {
         { label: 'Secretaría', value: 'Secretaría' }
     ];
 
-    constructor() { }
+    constructor(private http: HttpClient) { }
 
     getDocuments(status: 'received' | 'sent'): Observable<DocumentModel[]> {
         // Filter mock data
@@ -126,6 +128,39 @@ export class DocumentService {
         return of(newDoc).pipe(delay(800));
     }
 
+    /**
+     * Crea un documento con archivo PDF adjunto
+     * @param data Datos del documento
+     * @param pdfBlob PDF generado
+     * @returns Observable con el documento creado
+     */
+    createDocumentWithPdf(data: CreateDocumentRequest, pdfBlob: Blob): Observable<DocumentModel> {
+        // En producción, esto enviaría FormData al backend
+        const formData = new FormData();
+        formData.append('title', data.title);
+        formData.append('subject', data.subject);
+        formData.append('content', data.content);
+        formData.append('recipient', data.recipient);
+        formData.append('type', data.type);
+        formData.append('pdf', pdfBlob, `${this.sanitizeFilename(data.title)}.pdf`);
+
+        // return this.http.post<DocumentModel>(`${environment.BASE_URL}/api/documents`, formData);
+
+        // Mock: Simular creación con PDF
+        const newDoc: DocumentModel = {
+            id: `DOC-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+            ...data,
+            sender: 'Yo',
+            date: new Date(),
+            status: 'sent',
+            hasAttachments: true,
+            pdfUrl: URL.createObjectURL(pdfBlob), // En producción vendría del backend
+            pdfSize: pdfBlob.size
+        };
+        this.documents.unshift(newDoc);
+        return of(newDoc).pipe(delay(800));
+    }
+
     saveDraft(data: Partial<CreateDocumentRequest>): Observable<DocumentModel> {
         const draftDoc: DocumentModel = {
             id: `DOC-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
@@ -147,5 +182,15 @@ export class DocumentService {
             this.documents.unshift(draftDoc);
         }
         return of(draftDoc).pipe(delay(500));
+    }
+
+    /**
+     * Sanitiza el nombre de archivo para uso seguro
+     */
+    private sanitizeFilename(filename: string): string {
+        return filename
+            .replace(/[^a-z0-9áéíóúñü]/gi, '_')
+            .replace(/_+/g, '_')
+            .toLowerCase();
     }
 }
