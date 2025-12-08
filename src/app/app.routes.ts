@@ -16,6 +16,14 @@ export const routes: Routes = [
         path: '',
         component: Home,
       },
+      {
+        path: 'documentos',
+        loadChildren: () => import('./features/documents/documents.routes').then(m => m.documentsRoutes)
+      },
+      {
+        path: 'perfil',
+        loadChildren: () => import('./features/profile/profile.routes').then(m => m.profileRoutes)
+      },
       ...userRoutes,
     ],
   },

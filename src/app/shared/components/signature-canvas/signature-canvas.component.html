@@ -1,0 +1,83 @@
+<div class="signature-canvas-container">
+  <p-card>
+    <ng-template pTemplate="header">
+      <div class="p-4 border-b">
+        <h3 class="text-xl font-bold mb-2">Firma Electrónica del Documento</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          Haz clic en el documento donde deseas colocar tu firma electrónica
+        </p>
+      </div>
+    </ng-template>
+
+    <ng-template pTemplate="content">
+      <div class="canvas-wrapper">
+        <!-- Canvas con preview del PDF -->
+        <div class="pdf-preview-container"
+             [style.width.px]="canvasWidth"
+             (mousemove)="onMouseMove($event)"
+             (mouseleave)="onMouseLeave()"
+             (click)="onCanvasClick($event)">
+          <canvas
+            #pdfCanvas
+            [width]="canvasWidth"
+            [height]="canvasHeight"
+            class="pdf-canvas"
+          ></canvas>
+
+          <!-- Icono de firma fijo cuando se coloca -->
+          <div
+            *ngIf="signaturePosition"
+            class="signature-icon-wrapper"
+            [style.left.%]="signaturePosition.x"
+            [style.top.%]="signaturePosition.y"
+          >
+            <div class="signature-icon">
+              <i class="pi pi-file-edit"></i>
+              <div class="icon-label">Firma Aquí</div>
+            </div>
+          </div>
+
+          <!-- Icono fantasma que sigue el cursor hasta colocar -->
+          <div
+            *ngIf="!signaturePosition && hoverPosition"
+            class="signature-icon-wrapper ghost"
+            [style.left.%]="hoverPosition.x"
+            [style.top.%]="hoverPosition.y"
+          >
+            <div class="signature-icon">
+              <i class="pi pi-file-edit"></i>
+              <div class="icon-label">Firma Aquí</div>
+            </div>
+          </div>
+
+          <!-- Overlay de carga -->
+          <div *ngIf="loading" class="loading-overlay">
+            <i class="pi pi-spin pi-spinner text-2xl text-primary"></i>
+            <p class="mt-2 text-sm">Preparando vista previa...</p>
+          </div>
+        </div>
+
+        <!-- Instrucciones -->
+        <div class="instructions mt-4">
+          <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <i class="pi pi-info-circle"></i>
+            <span>Haz clic en el documento para posicionar tu firma. Al hacer clic, se estampará el código QR con tus datos en esa ubicación.</span>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-start items-center">
+        <button
+          pButton
+          label="Restablecer Posición"
+          icon="pi pi-refresh"
+          class="p-button-outlined p-button-secondary"
+          (click)="resetPosition()"
+          [disabled]="loading"
+        ></button>
+      </div>
+    </ng-template>
+  </p-card>
+</div>

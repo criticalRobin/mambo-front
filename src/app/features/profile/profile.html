@@ -1,0 +1,48 @@
+<div class="card p-6">
+  <div class="flex flex-col items-center justify-center">
+    <p-avatar
+      label="U"
+      size="xlarge"
+      shape="circle"
+      styleClass="mb-3 bg-blue-500 text-white w-24 h-24 text-4xl"
+    ></p-avatar>
+    <h2 class="mt-0 mb-1 text-2xl font-bold">Usuario Demo</h2>
+    <span class="text-gray-500 dark:text-gray-400">usuario@ejemplo.com</span>
+
+    <div class="mt-8 w-full md:w-1/2">
+      <h3 class="text-xl font-medium text-gray-900 dark:text-gray-100 mb-6">
+        Información Personal
+      </h3>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center mb-4">
+        <label class="md:col-span-4 font-medium">Nombre Completo</label>
+        <div class="md:col-span-8">
+          <input pInputText type="text" value="Usuario Demo" readonly class="w-full opacity-70" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center mb-4">
+        <label class="md:col-span-4 font-medium">Cargo</label>
+        <div class="md:col-span-8">
+          <input pInputText type="text" value="Administrador" readonly class="w-full opacity-70" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center mb-4">
+        <label class="md:col-span-4 font-medium">Departamento</label>
+        <div class="md:col-span-8">
+          <input pInputText type="text" value="Tecnología" readonly class="w-full opacity-70" />
+        </div>
+      </div>
+
+      <div class="flex justify-end mt-8">
+        <button
+          pButton
+          label="Editar Perfil"
+          icon="pi pi-pencil"
+          class="p-button-outlined"
+        ></button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,29 @@
+.fade-in {
+  animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.field {
+  margin-bottom: 1.5rem;
+}
+
+:host ::ng-deep .p-steps .p-steps-item .p-menuitem-link {
+  background: transparent;
+}
+
+:host ::ng-deep .p-editor-container .p-editor-toolbar {
+  background: var(--surface-100);
+  border-color: var(--surface-200);
+}
+
+:host ::ng-deep .p-editor-container .p-editor-content {
+  border-color: var(--surface-200);
+}
