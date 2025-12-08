@@ -22,13 +22,27 @@ export class AppMenu {
     this.model = [
       {
         label: 'Inicio',
-        items: [{ label: 'Bandeja de Entrada', icon: 'pi pi-fw pi-inbox', routerLink: ['/'] }],
+        items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/'] }],
+      },
+      {
+        label: 'Documentos',
+        items: [
+          { label: 'Nuevo Documento', icon: 'pi pi-fw pi-plus', routerLink: ['/documentos/nuevo'] },
+          { label: 'Bandeja de Entrada', icon: 'pi pi-fw pi-inbox', routerLink: ['/documentos/bandeja-entrada'] },
+          { label: 'Enviados', icon: 'pi pi-fw pi-send', routerLink: ['/documentos/enviados'] }
+        ]
+      },
+      {
+        label: 'Mi Cuenta',
+        items: [
+          { label: 'Perfil', icon: 'pi pi-fw pi-user', routerLink: ['/perfil'] }
+        ]
       },
       {
         label: 'Gestión',
         items: [
           { label: 'Mensajería', icon: 'pi pi-fw pi-envelope', routerLink: ['/uikit/formlayout'] },
-          { label: 'Usuarios', icon: 'pi pi-fw pi-users', routerLink: ['/uikit/formlayout'] },
+          { label: 'Usuarios', icon: 'pi pi-fw pi-users', routerLink: ['/users'] },
         ],
       },
     ];

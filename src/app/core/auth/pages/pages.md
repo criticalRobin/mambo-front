@@ -1,1 +1,0 @@
-aqui van las paginas si el modulo va a tenerr mas de una navegacion, una nueva pagina es un nuevo componente el cual debe seguir internamente la misma estructura (components, models, services)
