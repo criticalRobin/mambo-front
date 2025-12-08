@@ -3,6 +3,7 @@ import { AppLayout } from './layout/component/app.layout';
 import { Home } from './features/home/home';
 import { authRoutes } from './core/auth/auth.routes';
 import { authGuard } from './core/guards/auth.guard';
+import { userRoutes } from './features/users/user.routes';
 
 export const routes: Routes = [
   ...authRoutes,
@@ -22,7 +23,8 @@ export const routes: Routes = [
       {
         path: 'perfil',
         loadChildren: () => import('./features/profile/profile.routes').then(m => m.profileRoutes)
-      }
+      },
+      ...userRoutes,
     ],
   },
 ];

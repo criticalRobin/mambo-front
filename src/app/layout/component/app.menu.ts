@@ -42,7 +42,7 @@ export class AppMenu {
         label: 'Gestión',
         items: [
           { label: 'Mensajería', icon: 'pi pi-fw pi-envelope', routerLink: ['/uikit/formlayout'] },
-          { label: 'Usuarios', icon: 'pi pi-fw pi-users', routerLink: ['/uikit/formlayout'] },
+          { label: 'Usuarios', icon: 'pi pi-fw pi-users', routerLink: ['/users'] },
         ],
       },
     ];

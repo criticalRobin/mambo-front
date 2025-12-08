@@ -1,25 +1,33 @@
 <div>
-  <label for="code" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2"
-    >Código de verificación</label
-  >
-  <input
-    pInputText
-    id="code"
-    type="text"
-    placeholder="Ingrese el código de 6 dígitos"
-    class="md:w-full mb-8"
-    [(ngModel)]="code"
-    maxlength="6"
-    pattern="[0-9]*"
-    inputmode="numeric"
-    [disabled]="loading"
-    (keypress)="$event.key >= '0' && $event.key <= '9' || $event.preventDefault()"
-  />
+  <div class="mb-6">
+    <label for="code" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2"
+      >Código de verificación</label
+    >
+    <input
+      pInputText
+      id="code"
+      type="text"
+      placeholder="Ingrese el código de 6 dígitos"
+      class="md:w-full"
+      [ngClass]="{ 'ng-invalid ng-dirty': error }"
+      [(ngModel)]="code"
+      maxlength="6"
+      pattern="[0-9]*"
+      inputmode="numeric"
+      [disabled]="loading"
+      (input)="onCodeChange()"
+      (keypress)="$event.key >= '0' && $event.key <= '9' || $event.preventDefault()"
+      required
+    />
+    @if (error) {
+      <small class="text-red-500 block mt-1">{{ error }}</small>
+    }
+  </div>
   <p-button
     label="Verificar"
     styleClass="w-full"
     [loading]="loading"
-    [disabled]="loading || !code || code.length !== 6"
+    [disabled]="loading"
     (onClick)="onSubmit()"
   ></p-button>
 </div>
