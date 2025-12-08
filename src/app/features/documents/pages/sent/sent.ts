@@ -6,7 +6,7 @@ import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { InputTextModule } from 'primeng/inputtext';
 import { DocumentService } from '../../services/document.service';
-import { Document } from '../../models/document.model';
+import type { Document as DocumentModel } from '../../models/document.model';
 
 @Component({
     selector: 'app-sent',
@@ -16,7 +16,7 @@ import { Document } from '../../models/document.model';
     styleUrl: './sent.css'
 })
 export class Sent implements OnInit {
-    documents: Document[] = [];
+    documents: DocumentModel[] = [];
     loading: boolean = true;
 
     constructor(private documentService: DocumentService) { }

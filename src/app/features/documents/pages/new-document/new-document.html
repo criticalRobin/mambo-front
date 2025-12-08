@@ -1,153 +1,247 @@
 <div class="card p-6">
   <p-toast></p-toast>
-  <h2 class="text-2xl font-bold mb-4">Nuevo Documento</h2>
 
-  <p-steps
-    [model]="items"
-    [(activeIndex)]="activeIndex"
-    [readonly]="false"
-    styleClass="mb-8"
-  ></p-steps>
-
-  <div class="mt-8" [formGroup]="docForm">
-    <!-- Step 1: General Info -->
-    <div *ngIf="activeIndex === 0" class="fade-in space-y-4">
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-        <label for="type" class="md:col-span-2 font-medium">Tipo de Documento</label>
-        <div class="md:col-span-10">
-          <input
-            pInputText
-            id="type"
-            formControlName="type"
-            type="text"
-            placeholder="Ej. Memorando, Oficio"
-            class="w-full"
-          />
-          <small
-            *ngIf="docForm.get('type')?.invalid && docForm.get('type')?.touched"
-            class="text-red-500 block mt-1"
-            >Requerido</small
-          >
-        </div>
+  <!-- Drafts List View -->
+  <div *ngIf="showDrafts" class="fade-in">
+    <div class="mb-6">
+      <div class="flex justify-between items-center mb-2">
+        <h2 class="text-2xl font-bold m-0">Nuevo Documento</h2>
+        <button
+          pButton
+          label="Crear Nuevo"
+          icon="pi pi-plus"
+          (click)="startNewDocument()"
+          class="p-button-primary"
+        ></button>
       </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-        <label for="title" class="md:col-span-2 font-medium">Título</label>
-        <div class="md:col-span-10">
-          <input
-            pInputText
-            id="title"
-            formControlName="title"
-            type="text"
-            placeholder="Título del documento"
-            class="w-full"
-          />
-          <small
-            *ngIf="docForm.get('title')?.invalid && docForm.get('title')?.touched"
-            class="text-red-500 block mt-1"
-            >Requerido</small
-          >
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-        <label for="recipient" class="md:col-span-2 font-medium">Destinatario</label>
-        <div class="md:col-span-10">
-          <input
-            pInputText
-            id="recipient"
-            formControlName="recipient"
-            type="text"
-            placeholder="A quien va dirigido"
-            class="w-full"
-          />
-          <small
-            *ngIf="docForm.get('recipient')?.invalid && docForm.get('recipient')?.touched"
-            class="text-red-500 block mt-1"
-            >Requerido</small
-          >
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-        <label for="subject" class="md:col-span-2 font-medium">Asunto</label>
-        <div class="md:col-span-10">
-          <input
-            pInputText
-            id="subject"
-            formControlName="subject"
-            type="text"
-            placeholder="Asunto principal"
-            class="w-full"
-          />
-          <small
-            *ngIf="docForm.get('subject')?.invalid && docForm.get('subject')?.touched"
-            class="text-red-500 block mt-1"
-            >Requerido</small
-          >
-        </div>
-      </div>
+      <p class="text-gray-600 dark:text-gray-400 text-sm">
+        Continúa editando un borrador existente o crea un documento nuevo
+      </p>
     </div>
 
-    <!-- Step 2: Editor -->
-    <div *ngIf="activeIndex === 1" class="fade-in">
-      <h3 class="text-xl font-semibold mb-3">Redacción</h3>
-      <p-editor formControlName="content" [style]="{ height: '320px' }"></p-editor>
+    <p-table
+      [value]="drafts"
+      [loading]="loadingDrafts"
+      [rows]="5"
+      [paginator]="true"
+      styleClass="p-datatable-sm"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="font-bold">Título</th>
+          <th class="font-bold">Asunto</th>
+          <th class="font-bold">Tipo</th>
+          <th class="font-bold">Fecha</th>
+          <th class="font-bold text-center">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-draft>
+        <tr>
+          <td>{{ draft.title }}</td>
+          <td>{{ draft.subject }}</td>
+          <td>
+            <span class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm">{{
+              draft.type
+            }}</span>
+          </td>
+          <td>{{ draft.date | date : 'shortDate' }}</td>
+          <td class="text-center">
+            <button
+              pButton
+              icon="pi pi-pencil"
+              class="p-button-text p-button-warning p-button-rounded"
+              (click)="editDraft(draft)"
+              pTooltip="Continuar editando"
+            ></button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="text-center p-8">
+            <div class="flex flex-col items-center text-gray-400">
+              <i class="pi pi-file text-4xl mb-2"></i>
+              <span class="font-medium">No tienes borradores pendientes.</span>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Wizard View -->
+  <div *ngIf="!showDrafts" class="fade-in">
+    <div class="flex items-center mb-4">
+      <button
+        pButton
+        icon="pi pi-arrow-left"
+        (click)="cancel()"
+        class="p-button-text p-button-secondary mr-2"
+        pTooltip="Volver a borradores"
+      ></button>
+      <h2 class="text-2xl font-bold m-0">Nuevo Documento</h2>
     </div>
 
-    <!-- Step 3: Preview -->
-    <div *ngIf="activeIndex === 2" class="fade-in">
-      <h3 class="text-xl font-semibold mb-3">Revisión del Documento</h3>
-      <div
-        class="bg-gray-50 dark:bg-gray-900 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
-      >
-        <div class="text-3xl font-medium text-gray-900 dark:text-gray-100 mb-3">
-          {{ docForm.get('title')?.value }}
+    <p-steps
+      [model]="items"
+      [(activeIndex)]="activeIndex"
+      [readonly]="false"
+      styleClass="mb-8"
+    ></p-steps>
+
+    <div class="mt-8" [formGroup]="docForm">
+      <!-- Step 1: General Info -->
+      <div *ngIf="activeIndex === 0" class="fade-in space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          <label for="type" class="md:col-span-2 font-medium">Tipo de Documento</label>
+          <div class="md:col-span-10">
+            <input
+              pInputText
+              id="type"
+              formControlName="type"
+              type="text"
+              placeholder="Ej. Memorando, Oficio"
+              class="w-full"
+            />
+            <small
+              *ngIf="docForm.get('type')?.invalid && docForm.get('type')?.touched"
+              class="text-red-500 block mt-1"
+              >Requerido</small
+            >
+          </div>
         </div>
-        <div class="font-medium text-gray-500 dark:text-gray-400 mb-2">
-          <span class="text-gray-900 dark:text-gray-100 font-semibold">Para:</span>
-          {{ docForm.get('recipient')?.value }}
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          <label for="title" class="md:col-span-2 font-medium">Título</label>
+          <div class="md:col-span-10">
+            <input
+              pInputText
+              id="title"
+              formControlName="title"
+              type="text"
+              placeholder="Título del documento"
+              class="w-full"
+            />
+            <small
+              *ngIf="docForm.get('title')?.invalid && docForm.get('title')?.touched"
+              class="text-red-500 block mt-1"
+              >Requerido</small
+            >
+          </div>
         </div>
-        <div class="font-medium text-gray-500 dark:text-gray-400 mb-3">
-          <span class="text-gray-900 dark:text-gray-100 font-semibold">Asunto:</span>
-          {{ docForm.get('subject')?.value }}
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          <label for="recipient" class="md:col-span-2 font-medium">Destinatario</label>
+          <div class="md:col-span-10">
+            <p-select
+              [options]="recipients"
+              formControlName="recipient"
+              placeholder="Seleccione un destinatario"
+              styleClass="w-full"
+              [style]="{ width: '100%' }"
+            ></p-select>
+            <small
+              *ngIf="docForm.get('recipient')?.invalid && docForm.get('recipient')?.touched"
+              class="text-red-500 block mt-1"
+              >Requerido</small
+            >
+          </div>
         </div>
-        <hr class="my-4 border-t border-gray-300 dark:border-gray-700" />
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          <label for="subject" class="md:col-span-2 font-medium">Asunto</label>
+          <div class="md:col-span-10">
+            <input
+              pInputText
+              id="subject"
+              formControlName="subject"
+              type="text"
+              placeholder="Asunto principal"
+              class="w-full"
+            />
+            <small
+              *ngIf="docForm.get('subject')?.invalid && docForm.get('subject')?.touched"
+              class="text-red-500 block mt-1"
+              >Requerido</small
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Editor -->
+      <div *ngIf="activeIndex === 1" class="fade-in">
+        <h3 class="text-xl font-semibold mb-3">Redacción</h3>
+        <p-editor formControlName="content" [style]="{ height: '320px' }"></p-editor>
+      </div>
+
+      <!-- Step 3: Preview -->
+      <div *ngIf="activeIndex === 2" class="fade-in">
+        <h3 class="text-xl font-semibold mb-3">Revisión del Documento</h3>
         <div
-          class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
-          [innerHTML]="docForm.get('content')?.value"
-        ></div>
+          class="bg-gray-50 dark:bg-gray-900 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+        >
+          <div class="text-3xl font-medium text-gray-900 dark:text-gray-100 mb-3">
+            {{ docForm.get('title')?.value }}
+          </div>
+          <div class="font-medium text-gray-500 dark:text-gray-400 mb-2">
+            <span class="text-gray-900 dark:text-gray-100 font-semibold">Para:</span>
+            {{ docForm.get('recipient')?.value }}
+          </div>
+          <div class="font-medium text-gray-500 dark:text-gray-400 mb-3">
+            <span class="text-gray-900 dark:text-gray-100 font-semibold">Asunto:</span>
+            {{ docForm.get('subject')?.value }}
+          </div>
+          <hr class="my-4 border-t border-gray-300 dark:border-gray-700" />
+          <div
+            class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
+            [innerHTML]="docForm.get('content')?.value"
+          ></div>
+        </div>
       </div>
-    </div>
 
-    <!-- Navigation Buttons -->
-    <div class="flex justify-between mt-8">
-      <button
-        pButton
-        label="Atrás"
-        (click)="prev()"
-        icon="pi pi-angle-left"
-        [disabled]="activeIndex === 0"
-        class="p-button-secondary"
-      ></button>
-      <button
-        *ngIf="activeIndex < 2"
-        pButton
-        label="Siguiente"
-        (click)="next()"
-        icon="pi pi-angle-right"
-        iconPos="right"
-      ></button>
-      <button
-        *ngIf="activeIndex === 2"
-        pButton
-        label="Enviar Documento"
-        (click)="save()"
-        icon="pi pi-check"
-        iconPos="right"
-        [loading]="loading"
-        class="p-button-success"
-      ></button>
+      <!-- Navigation Buttons -->
+      <div class="flex justify-between mt-8">
+        <button
+          pButton
+          label="Atrás"
+          (click)="prev()"
+          icon="pi pi-angle-left"
+          [disabled]="activeIndex === 0"
+          class="p-button-secondary"
+        ></button>
+
+        <div class="flex gap-2">
+          <button
+            *ngIf="activeIndex === 1"
+            pButton
+            label="Guardar Borrador"
+            (click)="saveDraft()"
+            icon="pi pi-save"
+            [loading]="loading"
+            class="p-button-outlined p-button-secondary"
+            pTooltip="Guarda tu progreso para continuar después"
+          ></button>
+          <button
+            *ngIf="activeIndex < 2"
+            pButton
+            label="Siguiente"
+            (click)="next()"
+            icon="pi pi-angle-right"
+            iconPos="right"
+            [disabled]="!isStepValid(activeIndex)"
+          ></button>
+          <button
+            *ngIf="activeIndex === 2"
+            pButton
+            label="Enviar Documento"
+            (click)="save()"
+            icon="pi pi-check"
+            iconPos="right"
+            [loading]="loading"
+            class="p-button-success"
+          ></button>
+        </div>
+      </div>
     </div>
   </div>
 </div>

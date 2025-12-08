@@ -9,7 +9,11 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { EditorModule } from 'primeng/editor';
 import { ToastModule } from 'primeng/toast';
+import { SelectModule } from 'primeng/select';
+import { TableModule } from 'primeng/table';
+import { TooltipModule } from 'primeng/tooltip';
 import { DocumentService } from '../../services/document.service';
+import type { Document as DocumentModel } from '../../models/document.model';
 
 @Component({
     selector: 'app-new-document',
@@ -23,7 +27,10 @@ import { DocumentService } from '../../services/document.service';
         ButtonModule,
         InputTextModule,
         EditorModule,
-        ToastModule
+        ToastModule,
+        SelectModule,
+        TableModule,
+        TooltipModule
     ],
     providers: [MessageService],
     templateUrl: './new-document.html',
@@ -33,9 +40,14 @@ export class NewDocument implements OnInit {
     items: MenuItem[] = [];
     activeIndex: number = 0;
 
-    // Forms for validtion
-    docForm: FormGroup;
+    // View State
+    showDrafts: boolean = true;
+    drafts: DocumentModel[] = [];
+    recipients: any[] = [];
+    loadingDrafts: boolean = false;
 
+    // Forms for validation
+    docForm: FormGroup;
     loading: boolean = false;
 
     constructor(
@@ -68,6 +80,85 @@ export class NewDocument implements OnInit {
                 command: (event: any) => this.activeIndex = 2
             }
         ];
+
+        this.loadDrafts();
+        this.loadRecipients();
+    }
+
+    loadDrafts() {
+        this.loadingDrafts = true;
+        this.documentService.getDrafts().subscribe(data => {
+            this.drafts = data;
+            this.loadingDrafts = false;
+        });
+    }
+
+    loadRecipients() {
+        this.documentService.getRecipients().subscribe(data => {
+            this.recipients = data;
+        });
+    }
+
+    startNewDocument() {
+        this.showDrafts = false;
+        this.activeIndex = 0;
+        this.docForm.reset({ type: 'Memorando' });
+    }
+
+    editDraft(doc: DocumentModel) {
+        this.showDrafts = false;
+        this.activeIndex = 0;
+        this.docForm.patchValue({
+            title: doc.title,
+            subject: doc.subject,
+            recipient: doc.recipient, // Assuming recipient is stored correctly in draft
+            type: doc.type,
+            content: doc.content
+        });
+    }
+
+    cancel() {
+        this.showDrafts = true;
+    }
+
+    isStepValid(stepIndex: number): boolean {
+        switch (stepIndex) {
+            case 0:
+                return this.docForm.get('type')?.valid === true &&
+                    this.docForm.get('title')?.valid === true &&
+                    this.docForm.get('recipient')?.valid === true &&
+                    this.docForm.get('subject')?.valid === true;
+            case 1:
+                return this.docForm.get('content')?.valid === true;
+            default:
+                return true;
+        }
+    }
+
+    saveDraft() {
+        this.loading = true;
+        this.documentService.saveDraft(this.docForm.value).subscribe({
+            next: (doc) => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Guardado',
+                    detail: 'Borrador guardado correctamente'
+                });
+                this.loading = false;
+                setTimeout(() => {
+                    this.showDrafts = true;
+                    this.loadDrafts();
+                }, 1000);
+            },
+            error: (err) => {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo guardar el borrador'
+                });
+                this.loading = false;
+            }
+        });
     }
 
     next() {

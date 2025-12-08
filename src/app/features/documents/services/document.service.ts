@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, delay } from 'rxjs';
-import { Document, CreateDocumentRequest } from '../models/document.model';
+import type { Document as DocumentModel, CreateDocumentRequest } from '../models/document.model';
 
 @Injectable({
     providedIn: 'root'
@@ -8,7 +8,7 @@ import { Document, CreateDocumentRequest } from '../models/document.model';
 export class DocumentService {
 
     // Mock data
-    private documents: Document[] = [
+    private documents: DocumentModel[] = [
         {
             id: 'DOC-001',
             title: 'Informe Mensual de Actividades',
@@ -56,12 +56,44 @@ export class DocumentService {
             date: new Date('2025-12-06'),
             status: 'sent',
             hasAttachments: true
+        },
+        {
+            id: 'DOC-005',
+            title: 'Borrador: Plan Estratégico',
+            subject: 'Borrador inicial del plan 2026',
+            content: '<p>Este es un borrador...</p>',
+            type: 'Plan',
+            sender: 'Yo',
+            recipient: '',
+            date: new Date('2025-12-07'),
+            status: 'draft',
+            hasAttachments: false
+        },
+        {
+            id: 'DOC-006',
+            title: 'Borrador: Solicitud de Equipos',
+            subject: 'Requerimiento de nuevos monitores',
+            content: '<p>Necesitamos 3 monitores...</p>',
+            type: 'Solicitud',
+            sender: 'Yo',
+            recipient: '',
+            date: new Date('2025-12-07'),
+            status: 'draft',
+            hasAttachments: false
         }
+    ];
+
+    private recipients: any[] = [
+        { label: 'Dirección General', value: 'Dirección General' },
+        { label: 'Recursos Humanos', value: 'Recursos Humanos' },
+        { label: 'Gerencia TI', value: 'Gerencia TI' },
+        { label: 'Departamento Financiero', value: 'Departamento Financiero' },
+        { label: 'Secretaría', value: 'Secretaría' }
     ];
 
     constructor() { }
 
-    getDocuments(status: 'received' | 'sent'): Observable<Document[]> {
+    getDocuments(status: 'received' | 'sent'): Observable<DocumentModel[]> {
         // Filter mock data
         const filtered = this.documents.filter(d =>
             status === 'received' ? d.status === 'received' : d.status === 'sent'
@@ -69,12 +101,20 @@ export class DocumentService {
         return of(filtered).pipe(delay(500)); // Simulate network delay
     }
 
-    getDocumentById(id: string): Observable<Document | undefined> {
+    getDrafts(): Observable<DocumentModel[]> {
+        return of(this.documents.filter(d => d.status === 'draft')).pipe(delay(300));
+    }
+
+    getRecipients(): Observable<any[]> {
+        return of(this.recipients);
+    }
+
+    getDocumentById(id: string): Observable<DocumentModel | undefined> {
         return of(this.documents.find(d => d.id === id)).pipe(delay(300));
     }
 
-    createDocument(data: CreateDocumentRequest): Observable<Document> {
-        const newDoc: Document = {
+    createDocument(data: CreateDocumentRequest): Observable<DocumentModel> {
+        const newDoc: DocumentModel = {
             id: `DOC-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
             ...data,
             sender: 'Yo',
@@ -84,5 +124,28 @@ export class DocumentService {
         };
         this.documents.unshift(newDoc);
         return of(newDoc).pipe(delay(800));
+    }
+
+    saveDraft(data: Partial<CreateDocumentRequest>): Observable<DocumentModel> {
+        const draftDoc: DocumentModel = {
+            id: `DOC-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+            title: data.title || 'Borrador sin título',
+            subject: data.subject || '',
+            content: data.content || '',
+            type: data.type || 'Borrador',
+            recipient: data.recipient || '',
+            sender: 'Yo',
+            date: new Date(),
+            status: 'draft',
+            hasAttachments: false
+        };
+        // Remove existing draft with same ID if exists (update scenario)
+        const existingIndex = this.documents.findIndex(d => d.id === draftDoc.id && d.status === 'draft');
+        if (existingIndex !== -1) {
+            this.documents[existingIndex] = draftDoc;
+        } else {
+            this.documents.unshift(draftDoc);
+        }
+        return of(draftDoc).pipe(delay(500));
     }
 }
