@@ -1,1 +1,191 @@
-<p>users works!</p>
+<p-toolbar styleClass="mb-6">
+  <ng-template #start>
+    <p-button
+      label="Nuevo Usuario"
+      icon="pi pi-plus"
+      severity="secondary"
+      class="mr-2"
+      (onClick)="openNew()"
+    />
+  </ng-template>
+
+  <ng-template #end>
+    <p-button label="Exportar" icon="pi pi-upload" severity="secondary" (onClick)="exportCSV()" />
+  </ng-template>
+</p-toolbar>
+
+<p-table
+  #dt
+  [value]="users()"
+  [rows]="10"
+  [columns]="cols"
+  [paginator]="true"
+  [globalFilterFields]="['email', 'name', 'lastname']"
+  [tableStyle]="{ 'min-width': '75rem' }"
+  [rowHover]="true"
+  dataKey="id"
+  currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} usuarios"
+  [showCurrentPageReport]="true"
+  [rowsPerPageOptions]="[10, 20, 30]"
+  [loading]="loading"
+>
+  <ng-template #caption>
+    <div class="flex items-center justify-between">
+      <h5 class="m-0">Gestionar Usuarios</h5>
+      <p-iconfield>
+        <p-inputicon styleClass="pi pi-search" />
+        <input
+          pInputText
+          type="text"
+          (input)="onGlobalFilter(dt, $event)"
+          placeholder="Buscar..."
+        />
+      </p-iconfield>
+    </div>
+  </ng-template>
+  <ng-template #header>
+    <tr>
+      <th pSortableColumn="id" style="min-width: 8rem">
+        ID
+        <p-sortIcon field="id" />
+      </th>
+      <th pSortableColumn="email" style="min-width: 16rem">
+        Email
+        <p-sortIcon field="email" />
+      </th>
+      <th pSortableColumn="name" style="min-width: 16rem">
+        Nombre
+        <p-sortIcon field="name" />
+      </th>
+      <th pSortableColumn="lastname" style="min-width: 16rem">
+        Apellido
+        <p-sortIcon field="lastname" />
+      </th>
+    </tr>
+  </ng-template>
+  <ng-template #body let-user>
+    <tr>
+      <td style="min-width: 8rem">{{ user.id }}</td>
+      <td style="min-width: 16rem">{{ user.email }}</td>
+      <td style="min-width: 16rem">{{ user.name }}</td>
+      <td style="min-width: 16rem">{{ user.lastname }}</td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<p-dialog
+  [(visible)]="userDialog"
+  [style]="{ width: '450px' }"
+  header="Nuevo Usuario"
+  [modal]="true"
+  [blockScroll]="false"
+  [dismissableMask]="true"
+  [appendTo]="'body'"
+>
+  <ng-template #content>
+    <div class="flex flex-col gap-6">
+      <div>
+        <label for="email" class="block font-bold mb-3">Correo electrónico</label>
+        <input
+          type="email"
+          pInputText
+          id="email"
+          [(ngModel)]="newUser.email"
+          [ngClass]="{ 'ng-invalid ng-dirty': errors.email }"
+          (input)="onFieldChange('email')"
+          placeholder="Correo electrónico"
+          required
+          autofocus
+          fluid
+        />
+        @if (errors.email) {
+          <small class="text-red-500 block mt-1">{{ errors.email }}</small>
+        }
+      </div>
+
+      <div class="flex flex-col md:flex-row gap-4">
+        <div class="flex-1">
+          <label for="name" class="block font-bold mb-3">Nombre</label>
+          <input
+            type="text"
+            pInputText
+            id="name"
+            [(ngModel)]="newUser.name"
+            [ngClass]="{ 'ng-invalid ng-dirty': errors.name }"
+            (input)="onFieldChange('name')"
+            placeholder="Nombre"
+            required
+            fluid
+          />
+          @if (errors.name) {
+            <small class="text-red-500 block mt-1">{{ errors.name }}</small>
+          }
+        </div>
+        <div class="flex-1">
+          <label for="lastname" class="block font-bold mb-3">Apellido</label>
+          <input
+            type="text"
+            pInputText
+            id="lastname"
+            [(ngModel)]="newUser.lastname"
+            [ngClass]="{ 'ng-invalid ng-dirty': errors.lastname }"
+            (input)="onFieldChange('lastname')"
+            placeholder="Apellido"
+            required
+            fluid
+          />
+          @if (errors.lastname) {
+            <small class="text-red-500 block mt-1">{{ errors.lastname }}</small>
+          }
+        </div>
+      </div>
+
+      <div>
+        <label for="password" class="block font-bold mb-3">Contraseña</label>
+        <p-password
+          id="password"
+          [(ngModel)]="newUser.password"
+          [ngClass]="{ 'ng-invalid ng-dirty': errors.password1 }"
+          (ngModelChange)="onFieldChange('password1')"
+          placeholder="Contraseña"
+          [toggleMask]="true"
+          [fluid]="true"
+          [feedback]="false"
+          required
+        ></p-password>
+        @if (errors.password1) {
+          <small class="text-red-500 block mt-1">{{ errors.password1 }}</small>
+        }
+      </div>
+
+      <div>
+        <label for="password2" class="block font-bold mb-3">Confirmar Contraseña</label>
+        <p-password
+          id="password2"
+          [(ngModel)]="password2"
+          [ngClass]="{ 'ng-invalid ng-dirty': errors.password2 }"
+          (ngModelChange)="onFieldChange('password2')"
+          placeholder="Confirmar contraseña"
+          [toggleMask]="true"
+          [fluid]="true"
+          [feedback]="false"
+          required
+        ></p-password>
+        @if (errors.password2) {
+          <small class="text-red-500 block mt-1">{{ errors.password2 }}</small>
+        }
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #footer>
+    <p-button label="Cancelar" icon="pi pi-times" text (click)="hideDialog()" />
+    <p-button
+      label="Guardar"
+      icon="pi pi-check"
+      [loading]="loading"
+      [disabled]="loading"
+      (click)="saveUser()"
+    />
+  </ng-template>
+</p-dialog>
