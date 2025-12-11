@@ -163,15 +163,13 @@
               styleClass="w-full"
               [style]="{ width: '100%' }"
               [dropdown]="true"
+              optionLabel="displayName"
             >
               <ng-template let-user pTemplate="item">
                 <div class="flex flex-col py-2">
                   <span class="font-medium">{{ user.name }} {{ user.lastname }}</span>
                   <span class="text-sm text-gray-500">{{ user.email }}</span>
                 </div>
-              </ng-template>
-              <ng-template let-user pTemplate="selectedItem">
-                <span *ngIf="user">{{ user.name }} {{ user.lastname }} ({{ user.email }})</span>
               </ng-template>
             </p-autocomplete>
             <small
@@ -263,6 +261,29 @@
             <div class="md:col-span-2">
               <p class="text-sm text-gray-500 dark:text-gray-400">Categoría</p>
               <p class="font-medium text-gray-900 dark:text-gray-100">{{ docForm.get('category')?.value }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Campo de Contraseña (solo para documentos NORMALES) -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6" *ngIf="docForm.get('category')?.value === 'NORMAL'">
+          <h4 class="font-semibold text-lg mb-4 text-gray-900 dark:text-gray-100">
+            <i class="pi pi-lock mr-2"></i>Contraseña del Documento
+          </h4>
+          <div class="grid grid-cols-1 gap-4">
+            <div>
+              <label for="password-review" class="block font-medium mb-2">Contraseña (Opcional)</label>
+              <input
+                pInputText
+                id="password-review"
+                formControlName="password"
+                type="password"
+                placeholder="Ingrese una contraseña para proteger el documento"
+                class="w-full"
+              />
+              <small class="text-gray-500 block mt-1">
+                Esta contraseña será necesaria para desencriptar y ver el documento.
+              </small>
             </div>
           </div>
         </div>

@@ -221,7 +221,7 @@ export class DocumentService {
             hasAttachments: false
         };
         // Remove existing draft with same ID if exists (update scenario)
-        const existingIndex = this.documents.findIndex(d => d.id === draftDoc.id && d.status === 'draft');
+        const existingIndex = this.documents.findIndex(d => d.id === draftDoc.id && (d.status === 'draft' as any));
         if (existingIndex !== -1) {
             this.documents[existingIndex] = draftDoc;
         } else {
@@ -238,5 +238,51 @@ export class DocumentService {
             .replace(/[^a-z0-9áéíóúñü]/gi, '_')
             .replace(/_+/g, '_')
             .toLowerCase();
+    }
+
+    /**
+     * Sube un documento encriptado al servidor
+     */
+    uploadDocument(data: {
+        title: string;
+        type: string;
+        category: string;
+        password: string | null;
+        code: string;
+        length: number;
+        frequencies: string;
+        file: string | null;
+    }): Observable<any> {
+        const token = this.authService.getToken();
+        const headers = new HttpHeaders({
+            Authorization: `Bearer ${token}`,
+        });
+
+        const formData = new FormData();
+        formData.append('title', data.title);
+        formData.append('type', data.type);
+        formData.append('category', data.category);
+        
+        if (data.password) {
+            formData.append('password', data.password);
+        }
+        
+        formData.append('code', data.code);
+        formData.append('length', data.length.toString());
+        formData.append('frequencies', data.frequencies);
+        
+        if (data.file) {
+            // Convertir base64 a Blob
+            const byteCharacters = atob(data.file);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'application/pdf' });
+            formData.append('file', blob, `${data.title}.pdf`);
+        }
+
+        return this.http.post(`${environment.BASE_URL}/docs/upload`, formData, { headers });
     }
 }

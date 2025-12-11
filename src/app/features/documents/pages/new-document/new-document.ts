@@ -24,6 +24,7 @@ import type { Document as DocumentModel } from '../../models/document.model';
 import { DocumentType, DocumentCategory } from '../../models/document.model';
 import type { PdfDocument } from '@app/shared/models/pdf-config.interface';
 import type { User } from '../../../users/models/user.interface';
+import { encodeArithmetic, type ArithmeticResult } from '@app/utils/arithmetic-coding.util';
 
 @Component({
     selector: 'app-new-document',
@@ -107,7 +108,8 @@ export class NewDocument implements OnInit {
             category: [DocumentCategory.NORMAL, Validators.required],
             recipient: ['', Validators.required],
             type: [DocumentType.MEMORANDUM, Validators.required],
-            content: ['', Validators.required]
+            content: ['', Validators.required],
+            password: [''] // Contraseña opcional para documentos normales
         });
     }
 
@@ -165,29 +167,38 @@ export class NewDocument implements OnInit {
     searchUsers(event: any) {
         const query = event.query.toLowerCase();
         if (!query) {
-            this.filteredUsers = [...this.users];
+            this.filteredUsers = this.users.map(u => ({
+                ...u,
+                displayName: `${u.name} ${u.lastname}`
+            }));
         } else {
-            this.filteredUsers = this.users.filter(user => 
-                user.name.toLowerCase().includes(query) ||
-                user.lastname.toLowerCase().includes(query) ||
-                user.email.toLowerCase().includes(query)
-            );
+            this.filteredUsers = this.users
+                .filter(user => 
+                    user.name.toLowerCase().includes(query) ||
+                    user.lastname.toLowerCase().includes(query) ||
+                    user.email.toLowerCase().includes(query)
+                )
+                .map(u => ({
+                    ...u,
+                    displayName: `${u.name} ${u.lastname}`
+                }));
         }
     }
 
     onUserSelect(event: any) {
-        const user: User = event;
+        const user = event.value || event;
         if (user && user.name) {
             this.selectedUser = user;
+            const displayValue = `${user.name} ${user.lastname}`;
             this.docForm.patchValue({
-                recipient: `${user.name} ${user.lastname} (${user.email})`
+                recipient: displayValue
             });
         }
     }
 
-    getUserDisplayName(user: User): string {
+    getUserDisplayName(user: User | null): string {
         if (!user) return '';
-        return `${user.name} ${user.lastname} (${user.email})`;
+        return `${user.name} ${user.lastname}`;
     }
 
     startNewDocument() {
@@ -527,38 +538,35 @@ export class NewDocument implements OnInit {
     /**
      * Finaliza y envía el documento
      */
-    finalizeDocument(): void {
+    async finalizeDocument(): Promise<void> {
         this.loading = true;
         
-        if (this.pdfBlobForSignature && this.appliedSignature) {
-            // Enviar con PDF firmado
-            this.documentService.createDocumentWithPdf(
-                this.docForm.value,
-                this.pdfBlobForSignature
-            ).subscribe({
-                next: (doc) => {
-                    this.messageService.add({ 
-                        severity: 'success', 
-                        summary: 'Éxito', 
-                        detail: 'Documento firmado y enviado correctamente' 
-                    });
-                    setTimeout(() => {
-                        this.router.navigate(['/documentos/enviados']);
-                    }, 1500);
-                },
-                error: (err) => {
-                    this.messageService.add({ 
-                        severity: 'error', 
-                        summary: 'Error', 
-                        detail: 'No se pudo enviar el documento' 
-                    });
-                    this.loading = false;
-                }
-            });
-        } else {
-            // Enviar sin firma
-            this.documentService.createDocument(this.docForm.value).subscribe({
-                next: (doc) => {
+        try {
+            // Obtener el contenido del documento (texto plano sin HTML)
+            const content = this.stripHtml(this.docForm.get('content')?.value || '');
+            
+            // Encriptar el contenido usando codificación aritmética
+            const encryptedData: ArithmeticResult = encodeArithmetic(content);
+            
+            // Convertir el PDF a base64
+            const pdfBase64 = this.pdfBlobForSignature ? await this.blobToBase64(this.pdfBlobForSignature) : null;
+            
+            // Preparar datos según la categoría
+            const category = this.docForm.get('category')?.value;
+            const isEncrypted = category === DocumentCategory.ENCRYPTED;
+            
+            // Enviar al endpoint con los datos encriptados
+            this.documentService.uploadDocument({
+                title: this.docForm.get('title')?.value,
+                type: this.docForm.get('type')?.value,
+                category: category,
+                password: isEncrypted ? null : (this.docForm.get('password')?.value || null),
+                code: encryptedData.code,
+                length: encryptedData.length,
+                frequencies: JSON.stringify(encryptedData.frequencies),
+                file: pdfBase64
+            }).subscribe({
+                next: (response) => {
                     this.messageService.add({ 
                         severity: 'success', 
                         summary: 'Éxito', 
@@ -577,6 +585,39 @@ export class NewDocument implements OnInit {
                     this.loading = false;
                 }
             });
+        } catch (error) {
+            this.messageService.add({ 
+                severity: 'error', 
+                summary: 'Error', 
+                detail: 'Error al procesar el documento' 
+            });
+            this.loading = false;
         }
+    }
+
+    /**
+     * Convierte un Blob a string Base64
+     */
+    private blobToBase64(blob: Blob): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result as string;
+                // Remover el prefijo "data:application/pdf;base64,"
+                const base64 = base64String.split(',')[1];
+                resolve(base64);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    /**
+     * Elimina etiquetas HTML y retorna texto plano
+     */
+    private stripHtml(html: string): string {
+        const tmp = document.createElement('DIV');
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || '';
     }
 }

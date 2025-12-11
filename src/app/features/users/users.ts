@@ -54,7 +54,7 @@ export class Users implements OnInit {
     name: '',
     lastname: '',
     password: '',
-  };
+  } as RegisterRequest;
   password2: string = '';
   submitted: boolean = false;
   loading: boolean = false;

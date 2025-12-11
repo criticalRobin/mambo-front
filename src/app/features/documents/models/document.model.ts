@@ -1,4 +1,4 @@
-export type DocumentStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+export type DocumentStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' | 'draft' | 'received' | 'sent';
 
 export enum DocumentType {
     OFFICE = 'OFFICE',
