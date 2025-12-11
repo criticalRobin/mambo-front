@@ -29,7 +29,7 @@
       <ng-template pTemplate="header">
         <tr>
           <th class="font-bold">Título</th>
-          <th class="font-bold">Asunto</th>
+          <th class="font-bold">Categoría</th>
           <th class="font-bold">Tipo</th>
           <th class="font-bold">Fecha</th>
           <th class="font-bold text-center">Acciones</th>
@@ -38,13 +38,30 @@
       <ng-template pTemplate="body" let-draft>
         <tr>
           <td>{{ draft.title }}</td>
-          <td>{{ draft.subject }}</td>
           <td>
-            <span class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm">{{
-              draft.type
-            }}</span>
+            <span 
+              class="px-2 py-1 rounded text-sm font-medium"
+              [ngClass]="{
+                'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200': draft.category === 'NORMAL',
+                'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200': draft.category === 'ENCRYPTED'
+              }"
+            >
+              {{ draft.category === 'NORMAL' ? 'Normal' : 'Encriptado' }}
+            </span>
           </td>
-          <td>{{ draft.date | date : 'shortDate' }}</td>
+          <td>
+            <span 
+              class="px-2 py-1 rounded text-sm font-medium"
+              [ngClass]="{
+                'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200': draft.type === 'OFFICE',
+                'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200': draft.type === 'MEMORANDUM',
+                'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200': draft.type === 'NONE'
+              }"
+            >
+              {{ draft.type === 'OFFICE' ? 'Oficio' : draft.type === 'MEMORANDUM' ? 'Memorando' : 'Ninguno' }}
+            </span>
+          </td>
+          <td>{{ draft.date | date : 'short' }}</td>
           <td class="text-center">
             <button
               pButton
@@ -95,14 +112,16 @@
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
           <label for="type" class="md:col-span-2 font-medium">Tipo de Documento</label>
           <div class="md:col-span-10">
-            <input
-              pInputText
+            <p-select
               id="type"
               formControlName="type"
-              type="text"
-              placeholder="Ej. Memorando, Oficio"
-              class="w-full"
-            />
+              [options]="documentTypes"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccione el tipo de documento"
+              styleClass="w-full"
+              [style]="{ width: '100%' }"
+            ></p-select>
             <small
               *ngIf="docForm.get('type')?.invalid && docForm.get('type')?.touched"
               class="text-red-500 block mt-1"
@@ -133,13 +152,28 @@
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
           <label for="recipient" class="md:col-span-2 font-medium">Destinatario</label>
           <div class="md:col-span-10">
-            <p-select
-              [options]="recipients"
-              formControlName="recipient"
-              placeholder="Seleccione un destinatario"
+            <p-autocomplete
+              id="recipient"
+              [(ngModel)]="selectedUser"
+              [ngModelOptions]="{ standalone: true }"
+              [suggestions]="filteredUsers"
+              (completeMethod)="searchUsers($event)"
+              (onSelect)="onUserSelect($event)"
+              placeholder="Buscar destinatario por nombre o email"
               styleClass="w-full"
               [style]="{ width: '100%' }"
-            ></p-select>
+              [dropdown]="true"
+            >
+              <ng-template let-user pTemplate="item">
+                <div class="flex flex-col py-2">
+                  <span class="font-medium">{{ user.name }} {{ user.lastname }}</span>
+                  <span class="text-sm text-gray-500">{{ user.email }}</span>
+                </div>
+              </ng-template>
+              <ng-template let-user pTemplate="selectedItem">
+                <span *ngIf="user">{{ user.name }} {{ user.lastname }} ({{ user.email }})</span>
+              </ng-template>
+            </p-autocomplete>
             <small
               *ngIf="docForm.get('recipient')?.invalid && docForm.get('recipient')?.touched"
               class="text-red-500 block mt-1"
@@ -149,18 +183,20 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-          <label for="subject" class="md:col-span-2 font-medium">Asunto</label>
+          <label for="category" class="md:col-span-2 font-medium">Categoría</label>
           <div class="md:col-span-10">
-            <input
-              pInputText
-              id="subject"
-              formControlName="subject"
-              type="text"
-              placeholder="Asunto principal"
-              class="w-full"
-            />
+            <p-select
+              id="category"
+              formControlName="category"
+              [options]="documentCategories"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccione la categoría"
+              styleClass="w-full"
+              [style]="{ width: '100%' }"
+            ></p-select>
             <small
-              *ngIf="docForm.get('subject')?.invalid && docForm.get('subject')?.touched"
+              *ngIf="docForm.get('category')?.invalid && docForm.get('category')?.touched"
               class="text-red-500 block mt-1"
               >Requerido</small
             >
@@ -225,8 +261,8 @@
               <p class="font-medium text-gray-900 dark:text-gray-100">{{ docForm.get('title')?.value }}</p>
             </div>
             <div class="md:col-span-2">
-              <p class="text-sm text-gray-500 dark:text-gray-400">Asunto</p>
-              <p class="font-medium text-gray-900 dark:text-gray-100">{{ docForm.get('subject')?.value }}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Categoría</p>
+              <p class="font-medium text-gray-900 dark:text-gray-100">{{ docForm.get('category')?.value }}</p>
             </div>
           </div>
         </div>

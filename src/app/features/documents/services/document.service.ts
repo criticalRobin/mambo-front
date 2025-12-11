@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, of, delay } from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, of, delay, map } from 'rxjs';
 import { environment } from '@env/environment';
-import type { Document as DocumentModel, CreateDocumentRequest, CreateDocumentWithPdfRequest } from '../models/document.model';
+import type { Document as DocumentModel, CreateDocumentRequest, CreateDocumentWithPdfRequest, BackendDocumentResponse } from '../models/document.model';
+import { DocumentType, DocumentCategory } from '../models/document.model';
+import { AuthService } from '../../../core/auth/services/auth.service';
 
 @Injectable({
     providedIn: 'root'
@@ -14,9 +16,9 @@ export class DocumentService {
         {
             id: 'DOC-001',
             title: 'Informe Mensual de Actividades',
-            subject: 'Entrega de informe correspondiente a Noviembre',
+            category: DocumentCategory.NORMAL,
             content: '<p>Estimados, adjunto el informe...</p>',
-            type: 'Informe',
+            type: DocumentType.OFFICE,
             sender: 'Juan Pérez',
             recipient: 'Dirección General',
             date: new Date('2025-11-30'),
@@ -26,9 +28,9 @@ export class DocumentService {
         {
             id: 'DOC-002',
             title: 'Solicitud de Vacaciones',
-            subject: 'Permiso por vacaciones periodo 2025',
+            category: DocumentCategory.NORMAL,
             content: '<p>Solicito mis vacaciones...</p>',
-            type: 'Solicitud',
+            type: DocumentType.MEMORANDUM,
             sender: 'Maria Lopez',
             recipient: 'Recursos Humanos',
             date: new Date('2025-12-01'),
@@ -38,9 +40,9 @@ export class DocumentService {
         {
             id: 'DOC-003',
             title: 'Memorando Interno',
-            subject: 'Cambio de horario de reuniones',
+            category: DocumentCategory.ENCRYPTED,
             content: '<p>Se notifica el cambio...</p>',
-            type: 'Memorando',
+            type: DocumentType.MEMORANDUM,
             sender: 'Dirección General',
             recipient: 'Todos',
             date: new Date('2025-12-05'),
@@ -50,9 +52,9 @@ export class DocumentService {
         {
             id: 'DOC-004',
             title: 'Propuesta de Proyecto',
-            subject: 'Nueva iniciativa de digitalización',
+            category: DocumentCategory.NORMAL,
             content: '<p>Adjunto propuesta...</p>',
-            type: 'Propuesta',
+            type: DocumentType.OFFICE,
             sender: 'Yo',
             recipient: 'Gerencia TI',
             date: new Date('2025-12-06'),
@@ -62,9 +64,9 @@ export class DocumentService {
         {
             id: 'DOC-005',
             title: 'Borrador: Plan Estratégico',
-            subject: 'Borrador inicial del plan 2026',
+            category: DocumentCategory.NORMAL,
             content: '<p>Este es un borrador...</p>',
-            type: 'Plan',
+            type: DocumentType.MEMORANDUM,
             sender: 'Yo',
             recipient: '',
             date: new Date('2025-12-07'),
@@ -74,9 +76,9 @@ export class DocumentService {
         {
             id: 'DOC-006',
             title: 'Borrador: Solicitud de Equipos',
-            subject: 'Requerimiento de nuevos monitores',
+            category: DocumentCategory.NORMAL,
             content: '<p>Necesitamos 3 monitores...</p>',
-            type: 'Solicitud',
+            type: DocumentType.OFFICE,
             sender: 'Yo',
             recipient: '',
             date: new Date('2025-12-07'),
@@ -93,7 +95,10 @@ export class DocumentService {
         { label: 'Secretaría', value: 'Secretaría' }
     ];
 
-    constructor(private http: HttpClient) { }
+    constructor(
+        private http: HttpClient,
+        private authService: AuthService
+    ) { }
 
     getDocuments(status: 'received' | 'sent'): Observable<DocumentModel[]> {
         // Filter mock data
@@ -104,7 +109,48 @@ export class DocumentService {
     }
 
     getDrafts(): Observable<DocumentModel[]> {
-        return of(this.documents.filter(d => d.status === 'draft')).pipe(delay(300));
+        const token = this.authService.getToken();
+        const headers = new HttpHeaders({
+            Authorization: `Bearer ${token}`,
+        });
+
+        return this.http.get<BackendDocumentResponse[]>(`${environment.BASE_URL}/docs/my-documents`, { headers }).pipe(
+            map(backendDocs => this.mapBackendDocuments(backendDocs))
+        );
+    }
+
+    /**
+     * Mapea los documentos del backend al modelo interno
+     */
+    private mapBackendDocuments(backendDocs: BackendDocumentResponse[]): DocumentModel[] {
+        return backendDocs.map(doc => {
+            // Obtener el status del primer elemento de creations
+            const status = doc.creations && doc.creations.length > 0 
+                ? doc.creations[0].status 
+                : 'DRAFT' as const;
+
+            // Determinar si tiene encriptación
+            const isEncrypted = doc.encryptions && doc.encryptions.length > 0;
+
+            return {
+                id: doc.id.toString(),
+                title: doc.name.replace('.pdf', ''), // Usar el nombre sin extensión como título
+                category: doc.category,
+                type: doc.type,
+                content: doc.creations && doc.creations.length > 0 ? doc.creations[0].details : '',
+                sender: 'Yo',
+                recipient: '', // No viene en la respuesta
+                date: new Date(), // No viene en la respuesta, usar fecha actual
+                status: status,
+                hasAttachments: true,
+                pdfUrl: doc.url,
+                name: doc.name,
+                url: doc.url,
+                id_strapi: doc.id_strapi,
+                password: doc.password,
+                encryptions: doc.encryptions
+            };
+        });
     }
 
     getRecipients(): Observable<any[]> {
@@ -138,7 +184,7 @@ export class DocumentService {
         // En producción, esto enviaría FormData al backend
         const formData = new FormData();
         formData.append('title', data.title);
-        formData.append('subject', data.subject);
+        formData.append('category', data.category);
         formData.append('content', data.content);
         formData.append('recipient', data.recipient);
         formData.append('type', data.type);
@@ -165,9 +211,9 @@ export class DocumentService {
         const draftDoc: DocumentModel = {
             id: `DOC-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
             title: data.title || 'Borrador sin título',
-            subject: data.subject || '',
+            category: data.category || DocumentCategory.NORMAL,
             content: data.content || '',
-            type: data.type || 'Borrador',
+            type: data.type || DocumentType.NONE,
             recipient: data.recipient || '',
             sender: 'Yo',
             date: new Date(),

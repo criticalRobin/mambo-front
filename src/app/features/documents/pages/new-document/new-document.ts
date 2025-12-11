@@ -10,16 +10,20 @@ import { InputTextModule } from 'primeng/inputtext';
 import { EditorModule } from 'primeng/editor';
 import { ToastModule } from 'primeng/toast';
 import { SelectModule } from 'primeng/select';
+import { AutoCompleteModule } from 'primeng/autocomplete';
 import { TableModule } from 'primeng/table';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogModule } from 'primeng/dialog';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { DocumentService } from '../../services/document.service';
+import { UsersService } from '../../../users/services/users.service';
 import { PdfGeneratorService } from '@app/shared/services/pdf-generator.service';
 import { QrGeneratorService, QrSignatureConfig } from '@app/shared/services/qr-generator.service';
 import { SignatureCanvasComponent, AppliedSignature } from '@app/shared/components/signature-canvas/signature-canvas.component';
 import type { Document as DocumentModel } from '../../models/document.model';
+import { DocumentType, DocumentCategory } from '../../models/document.model';
 import type { PdfDocument } from '@app/shared/models/pdf-config.interface';
+import type { User } from '../../../users/models/user.interface';
 
 @Component({
     selector: 'app-new-document',
@@ -35,6 +39,7 @@ import type { PdfDocument } from '@app/shared/models/pdf-config.interface';
         EditorModule,
         ToastModule,
         SelectModule,
+        AutoCompleteModule,
         TableModule,
         TooltipModule,
         DialogModule,
@@ -51,8 +56,23 @@ export class NewDocument implements OnInit {
     // View State
     showDrafts: boolean = true;
     drafts: DocumentModel[] = [];
-    recipients: any[] = [];
+    users: User[] = [];
+    filteredUsers: User[] = [];
+    selectedUser: User | null = null;
     loadingDrafts: boolean = false;
+    loadingUsers: boolean = false;
+
+    // Enums for template
+    documentTypes = [
+        { label: 'Oficio', value: DocumentType.OFFICE },
+        { label: 'Memorando', value: DocumentType.MEMORANDUM },
+        { label: 'Ninguno', value: DocumentType.NONE }
+    ];
+
+    documentCategories = [
+        { label: 'Normal', value: DocumentCategory.NORMAL },
+        { label: 'Encriptado', value: DocumentCategory.ENCRYPTED }
+    ];
 
     // Forms for validation
     docForm: FormGroup;
@@ -75,6 +95,7 @@ export class NewDocument implements OnInit {
     constructor(
         private fb: FormBuilder,
         private documentService: DocumentService,
+        private usersService: UsersService,
         private pdfGeneratorService: PdfGeneratorService,
         private qrGeneratorService: QrGeneratorService,
         private messageService: MessageService,
@@ -83,9 +104,9 @@ export class NewDocument implements OnInit {
     ) {
         this.docForm = this.fb.group({
             title: ['', Validators.required],
-            subject: ['', Validators.required],
+            category: [DocumentCategory.NORMAL, Validators.required],
             recipient: ['', Validators.required],
-            type: ['Memorando', Validators.required],
+            type: [DocumentType.MEMORANDUM, Validators.required],
             content: ['', Validators.required]
         });
     }
@@ -111,7 +132,7 @@ export class NewDocument implements OnInit {
         ];
 
         this.loadDrafts();
-        this.loadRecipients();
+        this.loadUsers();
     }
 
     loadDrafts() {
@@ -122,25 +143,71 @@ export class NewDocument implements OnInit {
         });
     }
 
-    loadRecipients() {
-        this.documentService.getRecipients().subscribe(data => {
-            this.recipients = data;
+    loadUsers() {
+        this.loadingUsers = true;
+        this.usersService.getUsers().subscribe({
+            next: (data) => {
+                this.users = data;
+                this.filteredUsers = data;
+                this.loadingUsers = false;
+            },
+            error: (error) => {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudieron cargar los usuarios'
+                });
+                this.loadingUsers = false;
+            }
         });
+    }
+
+    searchUsers(event: any) {
+        const query = event.query.toLowerCase();
+        if (!query) {
+            this.filteredUsers = [...this.users];
+        } else {
+            this.filteredUsers = this.users.filter(user => 
+                user.name.toLowerCase().includes(query) ||
+                user.lastname.toLowerCase().includes(query) ||
+                user.email.toLowerCase().includes(query)
+            );
+        }
+    }
+
+    onUserSelect(event: any) {
+        const user: User = event;
+        if (user && user.name) {
+            this.selectedUser = user;
+            this.docForm.patchValue({
+                recipient: `${user.name} ${user.lastname} (${user.email})`
+            });
+        }
+    }
+
+    getUserDisplayName(user: User): string {
+        if (!user) return '';
+        return `${user.name} ${user.lastname} (${user.email})`;
     }
 
     startNewDocument() {
         this.showDrafts = false;
         this.activeIndex = 0;
-        this.docForm.reset({ type: 'Memorando' });
+        this.selectedUser = null;
+        this.docForm.reset({ 
+            type: DocumentType.MEMORANDUM,
+            category: DocumentCategory.NORMAL
+        });
     }
 
     editDraft(doc: DocumentModel) {
         this.showDrafts = false;
         this.activeIndex = 0;
+        this.selectedUser = null;
         this.docForm.patchValue({
             title: doc.title,
-            subject: doc.subject,
-            recipient: doc.recipient, // Assuming recipient is stored correctly in draft
+            category: doc.category,
+            recipient: doc.recipient,
             type: doc.type,
             content: doc.content
         });
@@ -156,7 +223,7 @@ export class NewDocument implements OnInit {
                 return this.docForm.get('type')?.valid === true &&
                     this.docForm.get('title')?.valid === true &&
                     this.docForm.get('recipient')?.valid === true &&
-                    this.docForm.get('subject')?.valid === true;
+                    this.docForm.get('category')?.valid === true;
             case 1:
                 return this.docForm.get('content')?.valid === true;
             case 2:
@@ -195,7 +262,7 @@ export class NewDocument implements OnInit {
     async next() {
         if (this.activeIndex === 0) {
             if (this.docForm.get('title')?.invalid ||
-                this.docForm.get('subject')?.invalid ||
+                this.docForm.get('category')?.invalid ||
                 this.docForm.get('recipient')?.invalid) {
                 this.docForm.markAllAsTouched();
                 this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Por favor complete los campos requeridos' });
@@ -342,7 +409,7 @@ export class NewDocument implements OnInit {
     private buildPdfDocument(): PdfDocument {
         return {
             title: this.docForm.get('title')?.value || '',
-            subject: this.docForm.get('subject')?.value || '',
+            subject: this.docForm.get('category')?.value || '',
             content: this.docForm.get('content')?.value || '',
             metadata: {
                 type: this.docForm.get('type')?.value || 'Documento',
